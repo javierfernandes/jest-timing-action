@@ -13255,11 +13255,13 @@ const makeDiff = async (octokit, context, pullRequest) => {
   
   return `
 modified snapshots:
-  ${modifiedSnapshots.map(({ path, content }) => `
-    path: ${path}
-    content
-    ${jsonSnippet(content)}
-  `)}
+  ${modifiedSnapshots.map(({ path, base, branch }) => `
+### path: ${path}
+base:
+${jsonSnippet(base)}
+branch:
+${jsonSnippet(branch)}
+`)}
 `
 
   // return JSON.stringify(pullRequest, null, 2)
@@ -13276,7 +13278,7 @@ const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
   branch: await fetchFile(octokit, context)(filename),
 })
 
-const fetchFile = (octokit, context, branch) => async  ({ filename }) => {
+const fetchFile = (octokit, context, branch) => async filename => {
   const result = await octokit.repos.getContents({
     ...context.repo,
     path: filename,
