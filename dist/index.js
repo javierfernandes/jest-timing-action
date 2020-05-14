@@ -13275,7 +13275,7 @@ const isModifiedSnapshot = allPass([
 
 const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
   path: filename,
-  // base: await fetchFile(octokit, context, baseBranch)(filename),
+  base: await fetchFile(octokit, context, baseBranch)(filename),
   branch: await fetchFile(octokit, context)(filename),
 })
 
@@ -13285,7 +13285,7 @@ const fetchFile = (octokit, context, branch) => async filename => {
   const result = await octokit.repos.getContents({
     ...context.repo,
     path: filename,
-    ...branch && { ref: branch },
+    // ...branch && { ref: branch },
   })
   return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
