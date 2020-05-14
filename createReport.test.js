@@ -66,8 +66,8 @@ File: \`index.test.js\`
 
 test('makeDiff', () => {
   expect(makeDiff(baseTests, branchTests)).toEqual([
-    { test: 'testA', base: 1244, branch: 1244 },
-    { test: 'testB', base: 10, branch: 20 },
+    { test: 'testA', base: 1244, branch: 1244, delta: 0, deltaPercentage: 0.00 },
+    { test: 'testB', base: 10, branch: 20, delta: 10, deltaPercentage: 100.00 },
     { test: 'testC', base: 20 },
     { test: 'testD', branch: 40 },
   ])

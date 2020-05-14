@@ -2,7 +2,7 @@ const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract
 
 const createReport = files => 
 `
-# Test execution times differences:
+# Test execution times differences
 
   ${files.map(fileReport)}
 `
@@ -15,17 +15,23 @@ File: \`${pathFromOne(base, branch)}\`
 | ---- |          ---: |         ---: |        ---: |      ---: |
 ${
   makeDiff(base.tests, branch.tests)
-  .map(({ test, base, branch }) => `| ${test} | ${base || '-'} | ${branch || '-'} | ${calc(branch, base, subtract)} | ${calc(branch, base, deltaPercentage)} |`)
+  .map(({ test, base, branch, delta, deltaPercentage }) => `| ${test} | ${value(base)} | ${value(branch)} | ${value(delta)} | ${deltaPercentage !== undefined ? deltaPercentage.toFixed(2) + '%' : '-'} |`)
   .join('\n')
 }
 `
 
-const calc = (a, b, fn) => (a && b) ? fn(a, b) : '-'
-const deltaPercentage = (branch, base) => (((branch - base) / base) * 100).toFixed(2) + `%`
-
+const value = a => a !== undefined ? a : '-'
 const pathFromOne = (base, branch) => (base || branch).path
 
 const mergeTestValues = reduce((acc, { from, duration }) => ({ ...acc, [from]: duration }), {})
+
+const calc = (a, b, fn) => (a && b) ? fn(a, b) : undefined
+const deltaPercentage = (branch, base) => parseFloat((((branch - base) / base) * 100).toFixed(2))
+const calculateDeltas = item => ({
+  ...item,
+  delta: calc(item.branch, item.base, subtract),
+  deltaPercentage: calc(item.branch, item.base, deltaPercentage)
+})
 
 const makeDiff = (baseTests, branchTests) => pipe(
   concat(
@@ -34,7 +40,8 @@ const makeDiff = (baseTests, branchTests) => pipe(
   groupBy(prop('fullName')),
   mapObjIndexed(mergeTestValues),
   Object.entries,
-  map(([test, value]) => ({ test, ...value }))
+  map(([test, value]) => ({ test, ...value })),
+  map(calculateDeltas)
 )(branchTests.map(assoc('from', 'branch')))
 
 
