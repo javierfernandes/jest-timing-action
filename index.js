@@ -26,7 +26,7 @@ const run = withErrorHandler(async () => {
 
   const files = await fetchFiles(octokit, context, context.payload.pull_request)
   const diffs = computeDifferences(threshold)(files)
-  const message = createReport(diffs)
+  const message = createReport(threshold, diffs)
 
   octokit.issues.createComment({
     ...context.repo,

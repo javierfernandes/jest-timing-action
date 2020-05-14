@@ -3165,7 +3165,7 @@ const run = withErrorHandler(async () => {
 
   const files = await fetchFiles(octokit, context, context.payload.pull_request)
   const diffs = computeDifferences(threshold)(files)
-  const message = createReport(diffs)
+  const message = createReport(threshold, diffs)
 
   octokit.issues.createComment({
     ...context.repo,
@@ -11568,9 +11568,9 @@ module.exports = dropLast;
 /***/ (function(module) {
 
 
-const createReport = diffs => 
+const createReport = (threshold, diffs) => 
 `
-# Test execution times differences
+# Test execution times differences ${threshold ? `(dt >= ${threshold}%)` : ''}
 
   ${diffs.map(fileReport)}
 `

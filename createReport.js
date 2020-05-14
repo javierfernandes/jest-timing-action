@@ -1,7 +1,7 @@
 
-const createReport = diffs => 
+const createReport = (threshold, diffs) => 
 `
-# Test execution times differences
+# Test execution times differences ${threshold ? `(dt >= ${threshold}%)` : ''}
 
   ${diffs.map(fileReport)}
 `
