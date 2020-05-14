@@ -1,3 +1,4 @@
+const { propEq, pick } = require('ramda')
 
 const makeDiff = async (octokit, context, pullRequest) => {
   const base = pullRequest.base.ref
@@ -6,12 +7,16 @@ const makeDiff = async (octokit, context, pullRequest) => {
     ...context.repo,
     pull_number: pullRequest.number,
   })
+
+  const modified = files.data
+    .filter(propEq('status', 'modified'))
+    .map(pick(['filename', 'sha']))
   
   return `
     want to merge to: ${base}
 
     changed files:
-    ${jsonSnippet(files)}
+    ${jsonSnippet(modified)}
   `
 
   // return JSON.stringify(pullRequest, null, 2)
