@@ -13249,15 +13249,22 @@ const makeDiff = async (octokit, context, pullRequest) => {
     pull_number: pullRequest.number,
   })
 
-  const modified = files.data
+  const modifiedSnapshots = await Promise.all(files.data
     .filter(isModifiedSnapshot)
     .map(pick(['filename', 'sha']))
+    .map(fetchFile(context, octokit))
+  )
   
   return `
     want to merge to: ${base}
 
-    changed files:
-    ${jsonSnippet(modified)}
+    modified snapshots:
+    ${modifiedSnapshots.map(({ path, content }) => `
+      path: ${path}
+      content
+      ${jsonSnippet(content)}
+    `)}
+
   `
 
   // return JSON.stringify(pullRequest, null, 2)
@@ -13267,6 +13274,18 @@ const isModifiedSnapshot = allPass([
   propEq('status', 'modified'),
   propSatisfies(test(/__tsnapshots__\/.*\.tsnapshot/), 'filename')
 ])
+
+const fetchFile = (octokit, context) => async  ({ filename }) => {
+  const result = await octokit.repos.getContents({
+    ...context.repo,
+    path: filename,
+  })
+
+  return {
+    path: filename,
+    content: Buffer.from(result.data.content, 'base64').toString()
+  }
+}
 
 const jsonSnippet = obj => `
 \`\`\`json
