@@ -3139,7 +3139,8 @@ module.exports = of;
 
 const core = __webpack_require__(470)
 const github = __webpack_require__(469)
-const makeDiff = __webpack_require__(444)
+const fetchFiles = __webpack_require__(217)
+const computeDifferences = __webpack_require__(834)
 const createReport = __webpack_require__(366)
 
 const withErrorHandler = fn => async () => {
@@ -3161,8 +3162,9 @@ const run = withErrorHandler(async () => {
   const pullRequestNumber = context.payload.pull_request.number
   const octokit = new github.GitHub(githubToken)
 
-  const diff = await makeDiff(octokit, context, context.payload.pull_request)
-  const message = createReport(diff)
+  const files = await fetchFiles(octokit, context, context.payload.pull_request)
+  const diffs = computeDifferences(files)
+  const message = createReport(diffs)
 
   octokit.issues.createComment({
     ...context.repo,
@@ -6825,7 +6827,49 @@ function _includes(a, list) {
 module.exports = _includes;
 
 /***/ }),
-/* 217 */,
+/* 217 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+const { propEq, prop, allPass, propSatisfies, test } = __webpack_require__(61)
+const core = __webpack_require__(470)
+
+const fetchFiles = async (octokit, context, pullRequest) => {
+  const files = await octokit.pulls.listFiles({
+    ...context.repo,
+    pull_number: pullRequest.number,
+  })
+
+  return await Promise.all(files.data
+    .filter(isModifiedSnapshot)
+    .map(prop('filename'))
+    .map(fetchFilePairs(octokit, context, pullRequest.base.ref, pullRequest.head.ref))
+  )
+}
+
+const isModifiedSnapshot = allPass([
+  propEq('status', 'modified'),
+  propSatisfies(test(/__tsnapshots__\/.*\.tsnapshot/), 'filename')
+])
+
+const fetchFilePairs = (octokit, context, baseBranch, prBranch) => async filename => ({
+  path: filename,
+  base: await fetchFile(octokit, context, baseBranch)(filename),
+  branch: await fetchFile(octokit, context, prBranch)(filename),
+})
+
+const fetchFile = (octokit, context, branch) => async filename => {
+  core.info(`FETCHING file ${filename} from ${branch}`)
+  const result = await octokit.repos.getContents({
+    ...context.repo,
+    path: filename,
+    ref: branch
+  })
+  return JSON.parse(Buffer.from(result.data.content, 'base64'))
+}
+
+module.exports = fetchFiles
+
+/***/ }),
 /* 218 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -11520,59 +11564,32 @@ module.exports = dropLast;
 
 /***/ }),
 /* 366 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract } = __webpack_require__(61)
 
-const createReport = files => 
+const createReport = diffs => 
 `
 # Test execution times differences
 
-  ${files.map(fileReport)}
+  ${diffs.map(fileReport)}
 `
 
-const fileReport = ({ base, branch }) =>
+const fileReport = ({ path, tests }) =>
 `
-File: \`${pathFromOne(base, branch)}\`
+File: \`${path}\`
 
 | test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
 | ---- |          ---: |         ---: |        ---: |      ---: |
 ${
-  makeDiff(base.tests, branch.tests)
-  .map(({ test, base, branch, delta, deltaPercentage }) => `| ${test} | ${value(base)} | ${value(branch)} | ${value(delta)} | ${deltaPercentage !== undefined ? deltaPercentage.toFixed(2) + '%' : '-'} |`)
+  tests.map(({ test, base, branch, delta, deltaPercentage }) => `| ${test} | ${value(base)} | ${value(branch)} | ${value(delta)} | ${deltaPercentage !== undefined ? deltaPercentage.toFixed(2) + '%' : '-'} |`)
   .join('\n')
 }
 `
 
 const value = a => a !== undefined ? a : '-'
-const pathFromOne = (base, branch) => (base || branch).path
-
-const mergeTestValues = reduce((acc, { from, duration }) => ({ ...acc, [from]: duration }), {})
-
-const calc = (a, b, fn) => (a && b) ? fn(a, b) : undefined
-const deltaPercentage = (branch, base) => parseFloat((((branch - base) / base) * 100).toFixed(2))
-const calculateDeltas = item => ({
-  ...item,
-  delta: calc(item.branch, item.base, subtract),
-  deltaPercentage: calc(item.branch, item.base, deltaPercentage)
-})
-
-const makeDiff = (baseTests, branchTests) => pipe(
-  concat(
-    baseTests.map(assoc('from', 'base')),
-  ),
-  groupBy(prop('fullName')),
-  mapObjIndexed(mergeTestValues),
-  Object.entries,
-  map(([test, value]) => ({ test, ...value })),
-  map(calculateDeltas)
-)(branchTests.map(assoc('from', 'branch')))
-
-
 
 module.exports = createReport
 module.exports.fileReport = fileReport
-module.exports.makeDiff = makeDiff
 
 /***/ }),
 /* 367 */
@@ -13293,49 +13310,7 @@ _curry2(function or(a, b) {
 module.exports = or;
 
 /***/ }),
-/* 444 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-const { propEq, prop, allPass, propSatisfies, test } = __webpack_require__(61)
-const core = __webpack_require__(470)
-
-const makeDiff = async (octokit, context, pullRequest) => {
-  const files = await octokit.pulls.listFiles({
-    ...context.repo,
-    pull_number: pullRequest.number,
-  })
-
-  return await Promise.all(files.data
-    .filter(isModifiedSnapshot)
-    .map(prop('filename'))
-    .map(fetchFilePairs(octokit, context, pullRequest.base.ref, pullRequest.head.ref))
-  )
-}
-
-const isModifiedSnapshot = allPass([
-  propEq('status', 'modified'),
-  propSatisfies(test(/__tsnapshots__\/.*\.tsnapshot/), 'filename')
-])
-
-const fetchFilePairs = (octokit, context, baseBranch, prBranch) => async filename => ({
-  path: filename,
-  base: await fetchFile(octokit, context, baseBranch)(filename),
-  branch: await fetchFile(octokit, context, prBranch)(filename),
-})
-
-const fetchFile = (octokit, context, branch) => async filename => {
-  core.info(`FETCHING file ${filename} from ${branch}`)
-  const result = await octokit.repos.getContents({
-    ...context.repo,
-    path: filename,
-    ref: branch
-  })
-  return JSON.parse(Buffer.from(result.data.content, 'base64'))
-}
-
-module.exports = makeDiff
-
-/***/ }),
+/* 444 */,
 /* 445 */,
 /* 446 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
@@ -23717,7 +23692,48 @@ module.exports = _curry2;
 /* 831 */,
 /* 832 */,
 /* 833 */,
-/* 834 */,
+/* 834 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract } = __webpack_require__(61)
+
+const computeDifferences = files => files.map(fileDiff)
+
+const fileDiff = ({ base, branch }) => ({
+  path: pathFromOne(base, branch),
+  tests: makeDiff(base.tests, branch.tests)
+})
+
+const pathFromOne = (base, branch) => (base || branch).path
+
+const makeDiff = (baseTests, branchTests) => pipe(
+  concat(
+    baseTests.map(assoc('from', 'base')),
+  ),
+  groupBy(prop('fullName')),
+  mapObjIndexed(mergeTestValues),
+  Object.entries,
+  map(([test, value]) => ({ test, ...value })),
+  map(calculateDeltas)
+)(branchTests.map(assoc('from', 'branch')))
+
+
+const mergeTestValues = reduce((acc, { from, duration }) => ({ ...acc, [from]: duration }), {})
+
+const calculateDeltas = item => ({
+  ...item,
+  delta: calc(item.branch, item.base, subtract),
+  deltaPercentage: calc(item.branch, item.base, deltaPercentage)
+})
+
+const calc = (a, b, fn) => (a && b) ? fn(a, b) : undefined
+const deltaPercentage = (branch, base) => parseFloat((((branch - base) / base) * 100).toFixed(2))
+
+
+module.exports = computeDifferences
+module.exports.makeDiff = makeDiff
+
+/***/ }),
 /* 835 */
 /***/ (function(module) {
 

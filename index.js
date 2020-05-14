@@ -1,6 +1,7 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
-const makeDiff = require('./diff')
+const fetchFiles = require('./fetchFiles')
+const computeDifferences = require('./computeDifferences')
 const createReport = require('./createReport')
 
 const withErrorHandler = fn => async () => {
@@ -22,8 +23,9 @@ const run = withErrorHandler(async () => {
   const pullRequestNumber = context.payload.pull_request.number
   const octokit = new github.GitHub(githubToken)
 
-  const diff = await makeDiff(octokit, context, context.payload.pull_request)
-  const message = createReport(diff)
+  const files = await fetchFiles(octokit, context, context.payload.pull_request)
+  const diffs = computeDifferences(files)
+  const message = createReport(diffs)
 
   octokit.issues.createComment({
     ...context.repo,

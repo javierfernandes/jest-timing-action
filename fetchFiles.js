@@ -1,7 +1,7 @@
 const { propEq, prop, allPass, propSatisfies, test } = require('ramda')
 const core = require('@actions/core')
 
-const makeDiff = async (octokit, context, pullRequest) => {
+const fetchFiles = async (octokit, context, pullRequest) => {
   const files = await octokit.pulls.listFiles({
     ...context.repo,
     pull_number: pullRequest.number,
@@ -35,4 +35,4 @@ const fetchFile = (octokit, context, branch) => async filename => {
   return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
 
-module.exports = makeDiff
+module.exports = fetchFiles
