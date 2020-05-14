@@ -1,4 +1,4 @@
-const { propEq, pick, allPass, propSatisfy, test } = require('ramda')
+const { propEq, pick, allPass, propSatisfies, test } = require('ramda')
 
 const makeDiff = async (octokit, context, pullRequest) => {
   const base = pullRequest.base.ref
@@ -24,7 +24,7 @@ const makeDiff = async (octokit, context, pullRequest) => {
 
 const isModifiedSnapshot = allPass([
   propEq('status', 'modified'),
-  propSatisfy('filename', test(/__tsnapshots__\/.*\.tsnapshot/))
+  propSatisfies('filename', test(/__tsnapshots__\/.*\.tsnapshot/))
 ])
 
 const jsonSnippet = obj => `
