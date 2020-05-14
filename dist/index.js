@@ -13265,7 +13265,7 @@ const makeDiff = async (octokit, context, pullRequest) => {
 
 const isModifiedSnapshot = allPass([
   propEq('status', 'modified'),
-  propSatisfies('filename', test(/__tsnapshots__\/.*\.tsnapshot/))
+  propSatisfies(test(/__tsnapshots__\/.*\.tsnapshot/), 'filename')
 ])
 
 const jsonSnippet = obj => `
