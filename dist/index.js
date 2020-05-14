@@ -13283,7 +13283,7 @@ const fetchFile = (octokit, context) => async  ({ filename }) => {
 
   return {
     path: filename,
-    content: Buffer.from(result.data.content, 'base64').toString()
+    content: JSON.parse(Buffer.from(result.data.content, 'base64'))
   }
 }
 
