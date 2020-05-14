@@ -491,6 +491,7 @@ module.exports = require("os");
 
 const core = __webpack_require__(470)
 const github = __webpack_require__(469)
+const makeDiff = __webpack_require__(444)
 
 const withErrorHandler = fn => async () => {
   try {
@@ -503,22 +504,21 @@ const withErrorHandler = fn => async () => {
 const run = withErrorHandler(() => {
   const githubToken = core.getInput('GITHUB_TOKEN')
 
-    const { context } = github
-    if (context.payload.pull_request == null) {
-      core.setFailed('No pull request found.')
-    }
+  const { context } = github
+  if (context.payload.pull_request == null) {
+    core.setFailed('No pull request found.')
+  }
 
-    const pullRequestNumber = context.payload.pull_request.number
-    const prTitle = context.payload.pull_request.title
-    const octokit = new github.GitHub(githubToken)
-    
-    const message = `Hello ! this is just testing ! ${prTitle}`
+  const pullRequestNumber = context.payload.pull_request.number
+  const octokit = new github.GitHub(githubToken)
 
-    octokit.issues.createComment({
-      ...context.repo,
-      issue_number: pullRequestNumber,
-      body: message,
-    })
+  const message = makeDiff(octokit, context.payload.pull_request)
+
+  octokit.issues.createComment({
+    ...context.repo,
+    issue_number: pullRequestNumber,
+    body: message,
+  })
 })
 
 
@@ -5071,6 +5071,17 @@ function escape(s) {
         .replace(/;/g, '%3B');
 }
 //# sourceMappingURL=command.js.map
+
+/***/ }),
+
+/***/ 444:
+/***/ (function(module) {
+
+const makeDiff = (octokit, pullRequest) => {
+  return JSON.stringify(pullRequest, null, 2)
+}
+
+module.exports = makeDiff
 
 /***/ }),
 
