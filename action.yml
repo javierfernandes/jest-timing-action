@@ -1,10 +1,8 @@
 name: 'Check Tests Timing'
 description: 'Compare jest tests timing and post stats as a PR comment'
-# inputs:
-#   milliseconds:  # id of input
-#     description: 'number of milliseconds to wait'
-#     required: true
-#     default: '1000'
+inputs:
+  threshold: 
+    description: 'The lower bound'
 # outputs:
 #   time: # output will be available to future steps 
 #     description: 'The message to output'

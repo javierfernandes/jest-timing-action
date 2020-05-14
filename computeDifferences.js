@@ -1,18 +1,17 @@
-const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract } = require('ramda')
+const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract, gte, identity, flip, filter, propSatisfies } = require('ramda')
 
-const computeDifferences = files => files.map(fileDiff)
-
-const fileDiff = ({ base, branch }) => ({
+const fileDiff = threshold => ({ base, branch }) => ({
   path: pathFromOne(base, branch),
-  tests: makeDiff(base.tests, branch.tests)
+  tests: filterByThreshold(threshold)(
+    makeDiff(base.tests, branch.tests)
+  )
 })
+
 
 const pathFromOne = (base, branch) => (base || branch).path
 
 const makeDiff = (baseTests, branchTests) => pipe(
-  concat(
-    baseTests.map(assoc('from', 'base')),
-  ),
+  concat(baseTests.map(assoc('from', 'base'))),
   groupBy(prop('fullName')),
   mapObjIndexed(mergeTestValues),
   Object.entries,
@@ -32,6 +31,10 @@ const calculateDeltas = item => ({
 const calc = (a, b, fn) => (a && b) ? fn(a, b) : undefined
 const deltaPercentage = (branch, base) => parseFloat((((branch - base) / base) * 100).toFixed(2))
 
+const passesThreshold = threshold => propSatisfies(flip(gte)(parseFloat(threshold)), 'deltaPercentage')
+const filterByThreshold = threshold => threshold ? filter(passesThreshold(threshold)) : identity
+
+const computeDifferences = threshold => map(fileDiff(threshold))
 
 module.exports = computeDifferences
 module.exports.makeDiff = makeDiff

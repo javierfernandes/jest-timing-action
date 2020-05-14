@@ -3152,6 +3152,7 @@ const withErrorHandler = fn => async () => {
 }
 
 const run = withErrorHandler(async () => {
+  const threshold = core.getInput('threshold')
   const githubToken = core.getInput('GITHUB_TOKEN')
 
   const { context } = github
@@ -3163,7 +3164,7 @@ const run = withErrorHandler(async () => {
   const octokit = new github.GitHub(githubToken)
 
   const files = await fetchFiles(octokit, context, context.payload.pull_request)
-  const diffs = computeDifferences(files)
+  const diffs = computeDifferences(threshold)(files)
   const message = createReport(diffs)
 
   octokit.issues.createComment({
@@ -23695,21 +23696,20 @@ module.exports = _curry2;
 /* 834 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract } = __webpack_require__(61)
+const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract, gte, identity, flip, filter, propSatisfies } = __webpack_require__(61)
 
-const computeDifferences = files => files.map(fileDiff)
-
-const fileDiff = ({ base, branch }) => ({
+const fileDiff = threshold => ({ base, branch }) => ({
   path: pathFromOne(base, branch),
-  tests: makeDiff(base.tests, branch.tests)
+  tests: filterByThreshold(threshold)(
+    makeDiff(base.tests, branch.tests)
+  )
 })
+
 
 const pathFromOne = (base, branch) => (base || branch).path
 
 const makeDiff = (baseTests, branchTests) => pipe(
-  concat(
-    baseTests.map(assoc('from', 'base')),
-  ),
+  concat(baseTests.map(assoc('from', 'base'))),
   groupBy(prop('fullName')),
   mapObjIndexed(mergeTestValues),
   Object.entries,
@@ -23729,6 +23729,10 @@ const calculateDeltas = item => ({
 const calc = (a, b, fn) => (a && b) ? fn(a, b) : undefined
 const deltaPercentage = (branch, base) => parseFloat((((branch - base) / base) * 100).toFixed(2))
 
+const passesThreshold = threshold => propSatisfies(flip(gte)(parseFloat(threshold)), 'deltaPercentage')
+const filterByThreshold = threshold => threshold ? filter(passesThreshold(threshold)) : identity
+
+const computeDifferences = threshold => map(fileDiff(threshold))
 
 module.exports = computeDifferences
 module.exports.makeDiff = makeDiff

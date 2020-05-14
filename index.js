@@ -13,6 +13,7 @@ const withErrorHandler = fn => async () => {
 }
 
 const run = withErrorHandler(async () => {
+  const threshold = core.getInput('threshold')
   const githubToken = core.getInput('GITHUB_TOKEN')
 
   const { context } = github
@@ -24,7 +25,7 @@ const run = withErrorHandler(async () => {
   const octokit = new github.GitHub(githubToken)
 
   const files = await fetchFiles(octokit, context, context.payload.pull_request)
-  const diffs = computeDifferences(files)
+  const diffs = computeDifferences(threshold)(files)
   const message = createReport(diffs)
 
   octokit.issues.createComment({
