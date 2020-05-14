@@ -13240,6 +13240,7 @@ module.exports = or;
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
 const { propEq, prop, allPass, propSatisfies, test } = __webpack_require__(61)
+const core = __webpack_require__(470)
 
 const makeDiff = async (octokit, context, pullRequest) => {
   const files = await octokit.pulls.listFiles({
@@ -13279,6 +13280,7 @@ const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
 })
 
 const fetchFile = (octokit, context, branch) => async filename => {
+  core.info(`FETCHING file ${filename} from ${branch}`)
   console.log('FETCHING file', filename, 'from branch', branch)
   const result = await octokit.repos.getContents({
     ...context.repo,
