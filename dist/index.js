@@ -13279,6 +13279,7 @@ const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
 })
 
 const fetchFile = (octokit, context, branch) => async filename => {
+  console.log('FETCHING file', filename, 'from branch', branch)
   const result = await octokit.repos.getContents({
     ...context.repo,
     path: filename,
