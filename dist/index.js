@@ -13239,7 +13239,7 @@ module.exports = or;
 /* 444 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-const { propEq, pick } = __webpack_require__(61)
+const { propEq, pick, allPass, propSatisfy, test } = __webpack_require__(61)
 
 const makeDiff = async (octokit, context, pullRequest) => {
   const base = pullRequest.base.ref
@@ -13250,7 +13250,7 @@ const makeDiff = async (octokit, context, pullRequest) => {
   })
 
   const modified = files.data
-    .filter(propEq('status', 'modified'))
+    .filter(isModifiedSnapshot)
     .map(pick(['filename', 'sha']))
   
   return `
@@ -13262,6 +13262,11 @@ const makeDiff = async (octokit, context, pullRequest) => {
 
   // return JSON.stringify(pullRequest, null, 2)
 }
+
+const isModifiedSnapshot = allPass([
+  propEq('status', 'modified'),
+  propSatisfy('filename', test(/__tsnapshots__\/.*\.tsnapshot/))
+])
 
 const jsonSnippet = obj => `
 \`\`\`json
