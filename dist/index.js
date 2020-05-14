@@ -11522,7 +11522,7 @@ module.exports = dropLast;
 /* 366 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map } = __webpack_require__(61)
+const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract } = __webpack_require__(61)
 
 const createReport = files => 
 `
@@ -11535,13 +11535,17 @@ const fileReport = ({ base, branch }) =>
 `
 File: \`${pathFromOne(base, branch)}\`
 
-| test | previous time | current time |
-| ---- |          ---: |         ---: |
+| test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
+| ---- |          ---: |         ---: |        ---: |      ---: |
 ${
   makeDiff(base.tests, branch.tests)
-  .map(({ test, base, branch }) => `| ${test} | ${base} | ${branch} |`)
+  .map(({ test, base, branch }) => `| ${test} | ${base || '-'} | ${branch || '-'} | ${calc(branch, base, subtract)} | ${calc(branch, base, deltaPercentage)} |`)
+  .join('\n')
 }
 `
+
+const calc = (a, b, fn) => (a && b) ? fn(a, b) : '-'
+const deltaPercentage = (branch, base) => (((branch - base) / base) * 100).toFixed(2) + `%`
 
 const pathFromOne = (base, branch) => (base || branch).path
 
@@ -11557,14 +11561,9 @@ const makeDiff = (baseTests, branchTests) => pipe(
   map(([test, value]) => ({ test, ...value }))
 )(branchTests.map(assoc('from', 'branch')))
 
-// const jsonSnippet = obj => `
-// \`\`\`json
-// ${JSON.stringify(obj, null, 2)}
-// \`\`\`
-// `
+
 
 module.exports = createReport
-
 module.exports.fileReport = fileReport
 module.exports.makeDiff = makeDiff
 
