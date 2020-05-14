@@ -13275,7 +13275,7 @@ const isModifiedSnapshot = allPass([
 
 const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
   path: filename,
-  base: await fetchFile(octokit, context, baseBranch)(filename),
+  // base: await fetchFile(octokit, context, baseBranch)(filename),
   branch: await fetchFile(octokit, context)(filename),
 })
 
