@@ -3,13 +3,18 @@ const createReport = (threshold, diffs) =>
 `
 # Test execution times differences ${threshold ? `(dt >= ${threshold}%)` : ''}
 
-  ${diffs.map(fileReport)}
+  ${diffs.length > 0 ? diffs.map(fileReport) : (threshold ? 'No significant changes' : 'No changed') }
 `
 
 const fileReport = ({ path, tests }) =>
 `
 File: \`${path}\`
 
+${createTable(tests)}
+`
+
+const createTable = tests => 
+`
 | test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
 | ---- |          ---: |         ---: |        ---: |      ---: |
 ${

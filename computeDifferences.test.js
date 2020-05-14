@@ -77,3 +77,9 @@ test('fileDiff without threshold', () => {
     }
   ])
 })
+
+test('fileDiff without tests', () => {
+  expect(computeDifferences()([
+    { base: { ...base, tests: [] }, branch: { ...branch, tests: [] } }
+  ])).toEqual([])
+})

@@ -11572,13 +11572,18 @@ const createReport = (threshold, diffs) =>
 `
 # Test execution times differences ${threshold ? `(dt >= ${threshold}%)` : ''}
 
-  ${diffs.map(fileReport)}
+  ${diffs.length > 0 ? diffs.map(fileReport) : (threshold ? 'No significant changes' : 'No changed') }
 `
 
 const fileReport = ({ path, tests }) =>
 `
 File: \`${path}\`
 
+${createTable(tests)}
+`
+
+const createTable = tests => 
+`
 | test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
 | ---- |          ---: |         ---: |        ---: |      ---: |
 ${
@@ -23696,7 +23701,7 @@ module.exports = _curry2;
 /* 834 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract, gte, identity, flip, filter, propSatisfies } = __webpack_require__(61)
+const { isEmpty, reject, concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map, subtract, gte, identity, flip, filter, propSatisfies } = __webpack_require__(61)
 
 const fileDiff = threshold => ({ base, branch }) => ({
   path: pathFromOne(base, branch),
@@ -23732,7 +23737,10 @@ const deltaPercentage = (branch, base) => parseFloat((((branch - base) / base) *
 const passesThreshold = threshold => propSatisfies(flip(gte)(parseFloat(threshold)), 'deltaPercentage')
 const filterByThreshold = threshold => threshold ? filter(passesThreshold(threshold)) : identity
 
-const computeDifferences = threshold => map(fileDiff(threshold))
+const computeDifferences = threshold => pipe(
+  map(fileDiff(threshold)),
+  reject(propSatisfies(isEmpty, 'tests'))
+)
 
 module.exports = computeDifferences
 module.exports.makeDiff = makeDiff
