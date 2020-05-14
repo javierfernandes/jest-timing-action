@@ -10,7 +10,7 @@ const makeDiff = async (octokit, context, pullRequest) => {
   const modifiedSnapshots = await Promise.all(files.data
     .filter(isModifiedSnapshot)
     .map(prop('filename'))
-    .map(fetchFilePairs(octokit, context, pullRequest.base.ref))
+    .map(fetchFilePairs(octokit, context, pullRequest.base.ref, pullRequest.head.ref))
   )
   
   return `
@@ -32,10 +32,10 @@ const isModifiedSnapshot = allPass([
   propSatisfies(test(/__tsnapshots__\/.*\.tsnapshot/), 'filename')
 ])
 
-const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
+const fetchFilePairs = (octokit, context, baseBranch, prBranch) => async filename => ({
   path: filename,
   base: await fetchFile(octokit, context, baseBranch)(filename),
-  branch: await fetchFile(octokit, context)(filename),
+  branch: await fetchFile(octokit, context, prBranch)(filename),
 })
 
 const fetchFile = (octokit, context, branch) => async filename => {
@@ -43,7 +43,7 @@ const fetchFile = (octokit, context, branch) => async filename => {
   const result = await octokit.repos.getContents({
     ...context.repo,
     path: filename,
-    ...branch !== undefined ? { ref: branch } : {},
+    ref: branch
   })
   return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
