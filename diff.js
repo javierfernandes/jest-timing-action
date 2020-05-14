@@ -1,8 +1,6 @@
-const { propEq, pick, allPass, propSatisfies, test } = require('ramda')
+const { propEq, prop, allPass, propSatisfies, test } = require('ramda')
 
 const makeDiff = async (octokit, context, pullRequest) => {
-  const base = pullRequest.base.ref
-
   const files = await octokit.pulls.listFiles({
     ...context.repo,
     pull_number: pullRequest.number,
@@ -10,21 +8,18 @@ const makeDiff = async (octokit, context, pullRequest) => {
 
   const modifiedSnapshots = await Promise.all(files.data
     .filter(isModifiedSnapshot)
-    .map(pick(['filename', 'sha']))
-    .map(fetchFile(octokit, context))
+    .map(prop('filename'))
+    .map(fetchFilePairs(octokit, context, pullRequest.base.ref))
   )
   
   return `
-    want to merge to: ${base}
-
-    modified snapshots:
-    ${modifiedSnapshots.map(({ path, content }) => `
-      path: ${path}
-      content
-      ${jsonSnippet(content)}
-    `)}
-
-  `
+modified snapshots:
+  ${modifiedSnapshots.map(({ path, content }) => `
+    path: ${path}
+    content
+    ${jsonSnippet(content)}
+  `)}
+`
 
   // return JSON.stringify(pullRequest, null, 2)
 }
@@ -34,16 +29,19 @@ const isModifiedSnapshot = allPass([
   propSatisfies(test(/__tsnapshots__\/.*\.tsnapshot/), 'filename')
 ])
 
-const fetchFile = (octokit, context) => async  ({ filename }) => {
+const fetchFilePairs = (octokit, context, baseBranch) => async filename => ({
+  path: filename,
+  base: await fetchFile(octokit, context, baseBranch)(filename),
+  branch: await fetchFile(octokit, context)(filename),
+})
+
+const fetchFile = (octokit, context, branch) => async  ({ filename }) => {
   const result = await octokit.repos.getContents({
     ...context.repo,
     path: filename,
+    ref: branch,
   })
-
-  return {
-    path: filename,
-    content: JSON.parse(Buffer.from(result.data.content, 'base64'))
-  }
+  return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
 
 const jsonSnippet = obj => `
