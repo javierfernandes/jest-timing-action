@@ -10,7 +10,7 @@ const withErrorHandler = fn => async () => {
   }
 }
 
-const run = withErrorHandler(() => {
+const run = withErrorHandler(async () => {
   const githubToken = core.getInput('GITHUB_TOKEN')
 
   const { context } = github
@@ -21,7 +21,7 @@ const run = withErrorHandler(() => {
   const pullRequestNumber = context.payload.pull_request.number
   const octokit = new github.GitHub(githubToken)
 
-  const message = makeDiff(octokit, context.payload.pull_request)
+  const message = await makeDiff(octokit, context, context.payload.pull_request)
 
   octokit.issues.createComment({
     ...context.repo,
