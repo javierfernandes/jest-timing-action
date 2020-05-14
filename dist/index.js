@@ -13282,7 +13282,7 @@ const fetchFile = (octokit, context, branch) => async filename => {
   const result = await octokit.repos.getContents({
     ...context.repo,
     path: filename,
-    ref: branch,
+    ...branch && { ref: branch },
   })
   return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
