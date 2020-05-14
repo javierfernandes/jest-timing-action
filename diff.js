@@ -7,24 +7,11 @@ const makeDiff = async (octokit, context, pullRequest) => {
     pull_number: pullRequest.number,
   })
 
-  const modifiedSnapshots = await Promise.all(files.data
+  return await Promise.all(files.data
     .filter(isModifiedSnapshot)
     .map(prop('filename'))
     .map(fetchFilePairs(octokit, context, pullRequest.base.ref, pullRequest.head.ref))
   )
-  
-  return `
-modified snapshots:
-  ${modifiedSnapshots.map(({ path, base, branch }) => `
-### path: ${path}
-base:
-${jsonSnippet(base)}
-branch:
-${jsonSnippet(branch)}
-`)}
-`
-
-  // return JSON.stringify(pullRequest, null, 2)
 }
 
 const isModifiedSnapshot = allPass([
@@ -47,11 +34,5 @@ const fetchFile = (octokit, context, branch) => async filename => {
   })
   return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
-
-const jsonSnippet = obj => `
-\`\`\`json
-${JSON.stringify(obj, null, 2)}
-\`\`\`
-`
 
 module.exports = makeDiff

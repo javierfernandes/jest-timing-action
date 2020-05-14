@@ -3140,6 +3140,7 @@ module.exports = of;
 const core = __webpack_require__(470)
 const github = __webpack_require__(469)
 const makeDiff = __webpack_require__(444)
+const createReport = __webpack_require__(366)
 
 const withErrorHandler = fn => async () => {
   try {
@@ -3160,7 +3161,8 @@ const run = withErrorHandler(async () => {
   const pullRequestNumber = context.payload.pull_request.number
   const octokit = new github.GitHub(githubToken)
 
-  const message = await makeDiff(octokit, context, context.payload.pull_request)
+  const diff = await makeDiff(octokit, context, context.payload.pull_request)
+  const message = createReport(diff)
 
   octokit.issues.createComment({
     ...context.repo,
@@ -11517,7 +11519,56 @@ _dispatchable([], _xdropLast, _dropLast));
 module.exports = dropLast;
 
 /***/ }),
-/* 366 */,
+/* 366 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+const { concat, assoc, groupBy, prop, mapObjIndexed, pipe, reduce, map } = __webpack_require__(61)
+
+const createReport = files => 
+`
+# Test execution times differences:
+
+  ${files.map(fileReport)}
+`
+
+const fileReport = ({ base, branch }) =>
+`
+File: \`${pathFromOne(base, branch)}\`
+
+| test | previous time | current time |
+| ---- |          ---: |         ---: |
+${
+  makeDiff(base.tests, branch.tests)
+  .map(({ test, base, branch }) => `| ${test} | ${base} | ${branch} |`)
+}
+`
+
+const pathFromOne = (base, branch) => (base || branch).path
+
+const mergeTestValues = reduce((acc, { from, duration }) => ({ ...acc, [from]: duration }), {})
+
+const makeDiff = (baseTests, branchTests) => pipe(
+  concat(
+    baseTests.map(assoc('from', 'base')),
+  ),
+  groupBy(prop('fullName')),
+  mapObjIndexed(mergeTestValues),
+  Object.entries,
+  map(([test, value]) => ({ test, ...value }))
+)(branchTests.map(assoc('from', 'branch')))
+
+// const jsonSnippet = obj => `
+// \`\`\`json
+// ${JSON.stringify(obj, null, 2)}
+// \`\`\`
+// `
+
+module.exports = createReport
+
+module.exports.fileReport = fileReport
+module.exports.makeDiff = makeDiff
+
+/***/ }),
 /* 367 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -13248,24 +13299,11 @@ const makeDiff = async (octokit, context, pullRequest) => {
     pull_number: pullRequest.number,
   })
 
-  const modifiedSnapshots = await Promise.all(files.data
+  return await Promise.all(files.data
     .filter(isModifiedSnapshot)
     .map(prop('filename'))
     .map(fetchFilePairs(octokit, context, pullRequest.base.ref, pullRequest.head.ref))
   )
-  
-  return `
-modified snapshots:
-  ${modifiedSnapshots.map(({ path, base, branch }) => `
-### path: ${path}
-base:
-${jsonSnippet(base)}
-branch:
-${jsonSnippet(branch)}
-`)}
-`
-
-  // return JSON.stringify(pullRequest, null, 2)
 }
 
 const isModifiedSnapshot = allPass([
@@ -13288,12 +13326,6 @@ const fetchFile = (octokit, context, branch) => async filename => {
   })
   return JSON.parse(Buffer.from(result.data.content, 'base64'))
 }
-
-const jsonSnippet = obj => `
-\`\`\`json
-${JSON.stringify(obj, null, 2)}
-\`\`\`
-`
 
 module.exports = makeDiff
 
