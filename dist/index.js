@@ -501,7 +501,7 @@ const withErrorHandler = fn => async () => {
   }
 }
 
-const run = withErrorHandler(() => {
+const run = withErrorHandler(async () => {
   const githubToken = core.getInput('GITHUB_TOKEN')
 
   const { context } = github
@@ -512,7 +512,7 @@ const run = withErrorHandler(() => {
   const pullRequestNumber = context.payload.pull_request.number
   const octokit = new github.GitHub(githubToken)
 
-  const message = makeDiff(octokit, context.payload.pull_request)
+  const message = await makeDiff(octokit, context, context.payload.pull_request)
 
   octokit.issues.createComment({
     ...context.repo,
@@ -5077,8 +5077,24 @@ function escape(s) {
 /***/ 444:
 /***/ (function(module) {
 
-const makeDiff = (octokit, pullRequest) => {
-  return JSON.stringify(pullRequest, null, 2)
+const makeDiff = async (octokit, context, pullRequest) => {
+  const base = pullRequest.base.ref
+
+  const files = await octokit.pullls.listFiles({
+    ...context.repo,
+    pull_number: pullRequest.number,
+  })
+  
+  return `
+    want to merge to: ${base}
+
+    changed files:
+    \`\`\`
+      ${files}
+    \`\`\`
+  `
+
+  // return JSON.stringify(pullRequest, null, 2)
 }
 
 module.exports = makeDiff
