@@ -11,7 +11,7 @@ const makeDiff = async (octokit, context, pullRequest) => {
   const modifiedSnapshots = await Promise.all(files.data
     .filter(isModifiedSnapshot)
     .map(pick(['filename', 'sha']))
-    .map(fetchFile(context, octokit))
+    .map(fetchFile(octokit, context))
   )
   
   return `
