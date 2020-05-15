@@ -9,9 +9,7 @@ const createReport = (threshold, diffs) =>
 const fileReport = ({ path, tests }) =>
 `
 File: \`${path}\`
-
-${createTable(tests)}
-`
+${createTable(tests)}`
 
 const createTable = tests => 
 `

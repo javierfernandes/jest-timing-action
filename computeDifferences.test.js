@@ -1,3 +1,4 @@
+const { over, lensProp, map } = require('ramda')
 const computeDifferences = require('./computeDifferences')
 const { makeDiff } = computeDifferences
 
@@ -57,6 +58,25 @@ test('fileDiff with threshold >= 25', () => {
       path: 'blah.spec.js',
       tests: [
         { test: 'testB', base: 10, branch: 20, delta: 10, deltaPercentage: 100.00 },
+      ]
+    }
+  ])
+})
+
+test('fileDiff with threshold >= 25 and negative deltas', () => {
+  expect(computeDifferences('25')([
+    {
+      base,
+      branch
+      : over(lensProp('tests'), 
+        map(t => t.fullName === 'testB' ? { ...t, duration: 0 } : t)
+      )(branch)
+    }
+  ])).toEqual([
+    {
+      path: 'blah.spec.js',
+      tests: [
+        { test: 'testB', base: 10, branch: 0, delta: -10, deltaPercentage: -100.00 },
       ]
     }
   ])
