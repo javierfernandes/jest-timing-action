@@ -18,12 +18,11 @@ test('fileReport', () => {
 
 | test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
 | ---- |          ---: |         ---: |        ---: |      ---: |
-| testA | 1244 | 1244 | 0 | 0.00% |
+| testA | 1,244 | 1,244 | 0 | 0.00% |
 | testB | 10 | 20 | 10 | 100.00% |
 | testC | 20 | - | - | - |
 | testD | - | 40 | - | - |
 `)
-
 })
 
 test('createReport', () => {
@@ -38,7 +37,7 @@ File: \`index.test.js\`
 
 | test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
 | ---- |          ---: |         ---: |        ---: |      ---: |
-| testA | 1244 | 1244 | 0 | 0.00% |
+| testA | 1,244 | 1,244 | 0 | 0.00% |
 | testB | 10 | 20 | 10 | 100.00% |
 | testC | 20 | - | - | - |
 | testD | - | 40 | - | - |
@@ -47,7 +46,7 @@ File: \`anotherFile.test.js\`
 
 | test | previous time (ms) | current time (ms) | delta (ms) | delta (%) |
 | ---- |          ---: |         ---: |        ---: |      ---: |
-| testA | 1244 | 1244 | 0 | 0.00% |
+| testA | 1,244 | 1,244 | 0 | 0.00% |
 | testB | 10 | 20 | 10 | 100.00% |
 | testC | 20 | - | - | - |
 | testD | - | 40 | - | - |
