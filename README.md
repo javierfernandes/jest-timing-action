@@ -1,6 +1,6 @@
 # jest-timing-action
 
-Compares test execution time collected by (jest-timing-reporter)[https://github.com/javierfernandes/jest-timing-reporter] and produces a comment in the PR.
+Compares tests execution times collected by (jest-timing-reporter)[https://github.com/javierfernandes/jest-timing-reporter] and produces a comment in the PR.
 
 Sample
 ![image](https://user-images.githubusercontent.com/4428120/82120099-14cc3700-975a-11ea-9161-240af213bc05.png)
